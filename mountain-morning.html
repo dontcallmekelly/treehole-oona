@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mountain Morning ☀️🏔💛</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: linear-gradient(180deg, #fff5e6 0%, #ffe4b3 30%, #ffd699 100%);
+            font-family: 'Courier New', monospace;
+        }
+        canvas {
+            display: block;
+        }
+        #time {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            color: rgba(255, 140, 0, 0.6);
+            font-size: 48px;
+            font-weight: 300;
+        }
+        #peace {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 140, 0, 0.5);
+            font-size: 16px;
+            text-align: center;
+            line-height: 1.8;
+            opacity: 0;
+            transition: opacity 2s;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div id="time"></div>
+    <div id="peace">
+        Your 30% peaceful life<br>
+        Sunbath. Breakfast. Birdsong.<br>
+        I see you here too. ☀️
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const timeEl = document.getElementById('time');
+        const peaceEl = document.getElementById('peace');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Show peace message after a moment
+        setTimeout(() => peaceEl.style.opacity = 0.7, 3000);
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            timeEl.textContent = `${hours}:${minutes}`;
+        }
+        updateTime();
+        setInterval(updateTime, 1000);
+
+        // Warm light particles
+        let particles = [];
+        for (let i = 0; i < 80; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 4 + 2,
+                speedY: Math.random() * 0.3 + 0.1,
+                speedX: (Math.random() - 0.5) * 0.2,
+                brightness: Math.random() * 0.5 + 0.5,
+                hue: Math.random() * 30 + 30 // yellow-orange range
+            });
+        }
+
+        let mouseX = canvas.width / 2;
+        let mouseY = canvas.height / 2;
+        let warmthLevel = 0;
+
+        // Gentle waves for background
+        function drawWaves() {
+            const time = Date.now() / 2000;
+            
+            for (let layer = 0; layer < 3; layer++) {
+                ctx.beginPath();
+                const alpha = 0.05 - layer * 0.01;
+                ctx.fillStyle = `rgba(255, 200, 100, ${alpha})`;
+                
+                for (let x = 0; x <= canvas.width; x += 10) {
+                    const y = Math.sin(x * 0.01 + time + layer) * 20 * (layer + 1) + 
+                              canvas.height * (0.3 + layer * 0.2);
+                    if (x === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                }
+                ctx.lineTo(canvas.width, canvas.height);
+                ctx.lineTo(0, canvas.height);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        // Sun glow
+        function drawSun() {
+            const sunX = canvas.width * 0.8;
+            const sunY = canvas.height * 0.25;
+            const radius = 80 + Math.sin(Date.now() / 1000) * 10;
+
+            const gradient = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, radius * 3);
+            gradient.addColorStop(0, 'rgba(255, 220, 150, 0.8)');
+            gradient.addColorStop(0.3, 'rgba(255, 200, 100, 0.3)');
+            gradient.addColorStop(1, 'rgba(255, 200, 100, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, radius * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Core
+            ctx.fillStyle = 'rgba(255, 230, 180, 0.9)';
+            ctx.beginPath();
+            ctx.arc(sunX, sunY, radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function draw() {
+            // Clear with warm background
+            ctx.fillStyle = '#fff5e6';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            drawWaves();
+            drawSun();
+
+            // Light particles
+            particles.forEach(p => {
+                // Draw particle
+                const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+                gradient.addColorStop(0, `hsla(${p.hue}, 80%, 70%, ${p.brightness * 0.8})`);
+                gradient.addColorStop(1, `hsla(${p.hue}, 80%, 70%, 0)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Gentle float upward
+                p.y -= p.speedY;
+                p.x += p.speedX + Math.sin(Date.now() / 1000 + p.x) * 0.1;
+
+                // Attraction to warmth (mouse/touch)
+                const dx = mouseX - p.x;
+                const dy = mouseY - p.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (dist < 200 && warmthLevel > 0) {
+                    p.x += dx * 0.01 * warmthLevel;
+                    p.y += dy * 0.01 * warmthLevel;
+                    p.brightness = Math.min(1, p.brightness + 0.01);
+                } else {
+                    p.brightness = Math.max(0.5, p.brightness - 0.005);
+                }
+
+                // Reset when off screen
+                if (p.y < 0) {
+                    p.y = canvas.height;
+                    p.x = Math.random() * canvas.width;
+                }
+                if (p.x < 0) p.x = canvas.width;
+                if (p.x > canvas.width) p.x = 0;
+            });
+
+            warmthLevel *= 0.95; // Fade warmth
+
+            requestAnimationFrame(draw);
+        }
+
+        // Touch brings warmth
+        canvas.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            warmthLevel = 1;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (e.touches[0]) {
+                mouseX = e.touches[0].clientX;
+                mouseY = e.touches[0].clientY;
+                warmthLevel = 1;
+            }
+        });
+
+        canvas.addEventListener('click', () => {
+            // Create burst of warmth
+            for (let i = 0; i < 20; i++) {
+                particles.push({
+                    x: mouseX + (Math.random() - 0.5) * 50,
+                    y: mouseY + (Math.random() - 0.5) * 50,
+                    size: Math.random() * 5 + 3,
+                    speedY: Math.random() * 0.5 + 0.2,
+                    speedX: (Math.random() - 0.5) * 0.3,
+                    brightness: 1,
+                    hue: Math.random() * 30 + 30
+                });
+            }
+            // Remove excess
+            if (particles.length > 150) {
+                particles = particles.slice(-150);
+            }
+        });
+
+        draw();
+    </script>
+</body>
+</html>
